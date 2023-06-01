@@ -1,0 +1,76 @@
+//Servo motor library
+#include <Servo.h>
+//Initialize variables
+                    
+int ldrtopl = 1;               // top-left LDR                          
+int ldrbotr = 2;               //  bottom-right LDR                                    
+int topl = 0;
+int  botr = 0;
+
+//Declare two servos
+Servo servo_updown;
+Servo servo_rightleft;
+
+int  threshold_value=10;           //measurement sensitivity
+
+void setup()
+{
+  Serial.begin(9600);                                //serial connection setup  //opens  serial port, sets data rate to 9600 bps
+  Serial.println("CLEARDATA");                       //clear  all data that’s been place in already
+  Serial.println("LABEL,t,voltage,current,power,Mode");   //define the column headings (PLX-DAQ command)
+  
+  servo_updown.attach(5);             //Servo motor up-down movement
+  servo_rightleft.attach(6);          //Servo motor right-left movement
+}
+
+void loop()
+{
+//  pv_power();
+char  Mode;
+    float volt = analogRead(A5)*5.0/1023;
+    float voltage = 2*volt;                //  Volt=(R1/R1+R2)*Voltage / R1=R2=10Ohms  => voltage=2*volt)
+    float current = voltage/20;            //  I=voltage/(R1+R2) 
+    float power  = voltage*current;
+ 
+    Serial.print("DATA,TIME,"); // PLX-DAQ command
+    Serial.print(voltage);    //send the voltage to serial port
+    Serial.print(",");
+    Serial.print(current);    //send the current to serial port
+    Serial.print(",");
+    Serial.print(power);  //send the power to serial port
+    Serial.print(",");
+   
+    
+    automaticsolartracker(); //send Mode "Automatic" to serial port
+} 
+
+void  automaticsolartracker(){
+  
+     //capturing analog values of each LDR
+     topl= analogRead(ldrtopl);         //capturing analog value of top left LDR
+
+     botr= analogRead(ldrbotr);         //capturing analog value of bot right LDR
+    
+    //top-left movement of  solar tracker
+      if ((topl - botr) > 0){        //Change  position only if light difference is bigger then the threshold_value
+        if (servo_rightleft.read()  >= 0) {
+          servo_rightleft.write((servo_rightleft.read()  - 2));
+        }
+     
+        if  (servo_updown.read() <= 180) {
+          servo_updown.write((servo_updown.read()  + 2));
+        }
+      
+    } else if ((botr - topl) > 0){    //Change position only if light  difference is bigger then thethreshold_value
+        if  (servo_updown.read() <= 180) {
+          servo_updown.write(( servo_updown.read()  - 2));
+        }
+      
+        if (servo_rightleft.read() >= 0) {
+          servo_rightleft.write((servo_rightleft.read()  + 2));
+        }
+      
+    }             
+      //right-down movement of solar tracker
+    
+ } 
